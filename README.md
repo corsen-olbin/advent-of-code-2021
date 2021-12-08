@@ -1,4 +1,5 @@
 # Advent of Code 2021 Solutions
+Puzzles found [here](https://adventofcode.com/2021).
 
 ## To run Elixir solutions (.exs files)
 1. Make sure [Elixir](https://elixir-lang.org/install.html) is installed
