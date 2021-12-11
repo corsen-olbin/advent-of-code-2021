@@ -3,7 +3,6 @@ defmodule AOCDay10 do
     body
     |> String.split()
     |> find_closing_char_sequences()
-    |> IO.inspect()
     |> Enum.map(fn x -> convert_to_points(x) end)
     |> Enum.sort()
     |> find_middle()
