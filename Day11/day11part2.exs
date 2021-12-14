@@ -31,7 +31,7 @@ defmodule AOCDay11 do
   # game loop
   # if flashes == total_octopuses, return day
   def game_loop_until_all_flash(_, total_octopuses, total_octopuses, step), do: step
-  # else, calculate next state and running flashes, decrement day
+  # else, calculate next state and amount of flashes for the day, increment day
   def game_loop_until_all_flash(state, total_octopuses, _, step) do
     {flashed_state, flashes} = calc_new_state(state, 0)
     new_state = clear_flashes(flashed_state)
