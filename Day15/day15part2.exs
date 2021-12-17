@@ -68,7 +68,7 @@ defmodule AOCDay15 do
       end
       |> map_2d_update(0, 0, 0)
 
-    starting_queue = [{0,0}]
+    starting_queue = [{0, 0}]
 
     final_distances = dijkstra_rec(map, distances, starting_queue, {xm, ym})
     final_distances[xm][ym]
@@ -77,12 +77,11 @@ defmodule AOCDay15 do
   def dijkstra_rec(_, distances, [], _), do: distances
 
   def dijkstra_rec(map, distances, queue, maxes) do
-    IO.inspect(Enum.count(queue))
-
     point =
       Enum.min(queue, fn {x1, y1}, {x2, y2} ->
         map_2d_get(distances, x1, y1) <= map_2d_get(distances, x2, y2)
       end)
+
     neighbors = find_neighbors(point, maxes, distances)
 
     new_distances =
@@ -93,7 +92,7 @@ defmodule AOCDay15 do
     dijkstra_rec(map, new_distances, new_queue ++ neighbors, maxes)
   end
 
-  def update_distance(map, distances, {x, y} = point, {nx, ny} = neighbor) do
+  def update_distance(map, distances, {x, y}, {nx, ny}) do
     tempDistance = distances[x][y] + map[nx][ny]
 
     if tempDistance < distances[nx][ny] do
@@ -118,103 +117,6 @@ defmodule AOCDay15 do
       list
     end
   end
-
-  # def find_least_risky_new(map) do
-  #   starting_calcd_map = %{0 => %{0 => 0}}
-
-  #   x_max = IO.inspect(Enum.count(map) - 1, label: "x max")
-  #   y_max = IO.inspect(Enum.count(map[0]) - 1, label: "y max")
-
-  #   final_calcd_map =
-  #     find_least_risky_new_rec(
-  #       map,
-  #       [{0, 0}],
-  #       starting_calcd_map,
-  #       {x_max, y_max}
-  #     )
-
-  #   IO.inspect(final_calcd_map[x_max][y_max])
-  #   final_calcd_map[x_max][y_max]
-  # end
-
-  # def find_least_risky_new_rec(map, queue, calcd_map, {max_x, max_y} = maxes) do
-  #   point =
-  #     Enum.min(queue, fn {x1, y1}, {x2, y2} ->
-  #       map_2d_get(calcd_map, x1, y1) <= map_2d_get(calcd_map, x2, y2)
-  #     end)
-
-  #   neighbors = find_neighbors(map, calcd_map, point, maxes)
-
-  #   new_calcd =
-  #     calcd_map
-  #     |> try_update_self(calcd_map, point, neighbors)
-  #     |> calc_neighbors(calcd_map, {x, y}, maxes)
-
-  #   cond do
-  #     :queue.is_empty(rest) ->
-  #       map_2d_update(
-  #         calcd_map,
-  #         x,
-  #         y,
-  #         min(map_2d_get(calcd_map, x - 1, y), map_2d_get(calcd_map, x, y - 1)) + map[x][y]
-  #       )
-
-  #     map_2d_get(calcd_map, x, y) != 1_000_000 ->
-  #       find_least_risky_new_rec(map, rest, calcd_map, maxes)
-
-  #     x == max_x and y == max_y ->
-  #       find_least_risky_new_rec(
-  #         map,
-  #         rest,
-  #         map_2d_update(
-  #           calcd_map,
-  #           x,
-  #           y,
-  #           min(map_2d_get(calcd_map, x - 1, y), map_2d_get(calcd_map, x, y - 1)) + map[x][y]
-  #         ),
-  #         maxes
-  #       )
-
-  #     x >= max_x and not (y >= max_y) ->
-  #       find_least_risky_new_rec(
-  #         map,
-  #         :queue.in({x, y + 1}, rest),
-  #         map_2d_update(
-  #           calcd_map,
-  #           x,
-  #           y,
-  #           min(map_2d_get(calcd_map, x - 1, y), map_2d_get(calcd_map, x, y - 1)) + map[x][y]
-  #         ),
-  #         maxes
-  #       )
-
-  #     y >= max_y and not (x >= max_x) ->
-  #       find_least_risky_new_rec(
-  #         map,
-  #         :queue.in({x + 1, y}, rest),
-  #         map_2d_update(
-  #           calcd_map,
-  #           x,
-  #           y,
-  #           min(map_2d_get(calcd_map, x - 1, y), map_2d_get(calcd_map, x, y - 1)) + map[x][y]
-  #         ),
-  #         maxes
-  #       )
-
-  #     true ->
-  #       find_least_risky_new_rec(
-  #         map,
-  #         :queue.in({x, y + 1}, :queue.in({x + 1, y}, rest)),
-  #         map_2d_update(
-  #           calcd_map,
-  #           x,
-  #           y,
-  #           min(map_2d_get(calcd_map, x - 1, y), map_2d_get(calcd_map, x, y - 1)) + map[x][y]
-  #         ),
-  #         maxes
-  #       )
-  #   end
-  # end
 
   def map_2d_update(map, i, j, value),
     do:

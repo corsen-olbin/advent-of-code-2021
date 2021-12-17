@@ -3,7 +3,7 @@ defmodule AOCDay15 do
     body
     |> String.split()
     |> turn_grid_into_map()
-    |> find_least_risky_new()
+    |> dijkstra()
     |> print_answer()
   end
 
@@ -24,92 +24,65 @@ defmodule AOCDay15 do
     end)
   end
 
-  def find_least_risky_new(map) do
-    queue = :queue.in({1, 0}, :queue.new())
-    starting_queue = :queue.in({0, 1}, queue)
+  def dijkstra(map) do
+    xm = Enum.count(map) - 1
+    ym = Enum.count(map[0]) - 1
 
-    starting_calcd_map = %{0 => %{0 => 0}}
+    distances =
+      for i <- 0..xm,
+          j <- 0..ym,
+          reduce: %{} do
+        acc -> map_2d_update(acc, i, j, 1_000_000)
+      end
+      |> map_2d_update(0, 0, 0)
 
-    x_max = Enum.count(map) - 1
-    y_max = Enum.count(map[0]) - 1
+    starting_queue = [{0, 0}]
 
-    final_calcd_map =
-      find_least_risky_new_rec(
-        map,
-        starting_queue,
-        starting_calcd_map,
-        {x_max, y_max}
-      )
-
-    final_calcd_map[x_max][y_max]
+    final_distances = dijkstra_rec(map, distances, starting_queue, {xm, ym})
+    final_distances[xm][ym]
   end
 
-  def find_least_risky_new_rec(map, queue, calcd_map, {max_x, max_y} = maxes) do
-    {{:value, {x, y}}, rest} = :queue.out(queue)
+  def dijkstra_rec(_, distances, [], _), do: distances
 
-    cond do
-      :queue.is_empty(rest) ->
-        map_2d_update(
-          calcd_map,
-          x,
-          y,
-          min(map_2d_get(calcd_map, x - 1, y), map_2d_get(calcd_map, x, y - 1)) + map[x][y]
-        )
+  def dijkstra_rec(map, distances, queue, maxes) do
+    point =
+      Enum.min(queue, fn {x1, y1}, {x2, y2} ->
+        map_2d_get(distances, x1, y1) <= map_2d_get(distances, x2, y2)
+      end)
 
-      map_2d_get(calcd_map, x, y) != 1_000_000 ->
-        find_least_risky_new_rec(map, rest, calcd_map, maxes)
+    neighbors = find_neighbors(point, maxes, distances)
 
-      x == max_x and y == max_y ->
-        find_least_risky_new_rec(
-          map,
-          rest,
-          map_2d_update(
-            calcd_map,
-            x,
-            y,
-            min(map_2d_get(calcd_map, x - 1, y), map_2d_get(calcd_map, x, y - 1)) + map[x][y]
-          ),
-          maxes
-        )
+    new_distances =
+      neighbors
+      |> Enum.reduce(distances, fn neighbor, acc -> update_distance(map, acc, point, neighbor) end)
 
-      x >= max_x and not (y >= max_y) ->
-        find_least_risky_new_rec(
-          map,
-          :queue.in({x, y + 1}, rest),
-          map_2d_update(
-            calcd_map,
-            x,
-            y,
-            min(map_2d_get(calcd_map, x - 1, y), map_2d_get(calcd_map, x, y - 1)) + map[x][y]
-          ),
-          maxes
-        )
+    new_queue = List.delete(queue, point)
+    dijkstra_rec(map, new_distances, new_queue ++ neighbors, maxes)
+  end
 
-      y >= max_y and not (x >= max_x) ->
-        find_least_risky_new_rec(
-          map,
-          :queue.in({x + 1, y}, rest),
-          map_2d_update(
-            calcd_map,
-            x,
-            y,
-            min(map_2d_get(calcd_map, x - 1, y), map_2d_get(calcd_map, x, y - 1)) + map[x][y]
-          ),
-          maxes
-        )
+  def update_distance(map, distances, {x, y}, {nx, ny}) do
+    tempDistance = distances[x][y] + map[nx][ny]
 
-      true ->
-        find_least_risky_new_rec(
-          map,
-          :queue.in({x, y + 1}, :queue.in({x + 1, y}, rest)),
-          map_2d_update(
-            calcd_map,
-            x,
-            y,
-            min(map_2d_get(calcd_map, x - 1, y), map_2d_get(calcd_map, x, y - 1)) + map[x][y]
-          ),
-          maxes
-        )
+    if tempDistance < distances[nx][ny] do
+      map_2d_update(distances, nx, ny, tempDistance)
+    else
+      distances
+    end
+  end
+
+  def find_neighbors({x, y}, maxes, distances) do
+    []
+    |> add_neighbor({x + 1, y}, maxes, distances)
+    |> add_neighbor({x - 1, y}, maxes, distances)
+    |> add_neighbor({x, y + 1}, maxes, distances)
+    |> add_neighbor({x, y - 1}, maxes, distances)
+  end
+
+  def add_neighbor(list, {x, y}, {x_max, y_max}, distances) do
+    if x > -1 and x <= x_max and y > -1 and y <= y_max and distances[x][y] == 1_000_000 do
+      [{x, y} | list]
+    else
+      list
     end
   end
 
