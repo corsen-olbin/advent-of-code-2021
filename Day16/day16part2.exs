@@ -2,18 +2,61 @@ defmodule AOCDay16 do
   def version_numbers_sum(body) do
     body
     |> convert_to_binary()
-    |> IO.inspect()
     |> read_meta([], %{}, 1000)
-    |> sum_versions()
-    |> print_answer()
+    |> solve_packets_top()
+    |> List.first()
+    |> IO.inspect(label: "Answer")
   end
 
-  def sum_versions({packets, _}) do
-    Enum.reduce(packets, 0, fn x, acc -> acc + (elem(Integer.parse(x[:version], 2), 0)) end)
+  def solve_packets_top({packets, _}), do: solve_packets(packets)
+
+  def solve_packets(packets) do
+    Enum.map(packets, fn x -> solve_packet(x) end)
   end
 
-  def print_answer(answer) do
-    IO.inspect(answer)
+  def solve_packet(packet) do
+    case packet[:type_id] do
+      "000" -> solve_packets(packet.sub_packets) |> Enum.sum()
+      "001" -> solve_packets(packet.sub_packets) |> Enum.product()
+      "010" -> solve_packets(packet.sub_packets) |> Enum.min()
+      "011" -> solve_packets(packet.sub_packets) |> Enum.max()
+      "100" -> convert_literal(packet.nums)
+      "101" -> solve_packets(packet.sub_packets) |> greater_than()
+      "110" -> solve_packets(packet.sub_packets) |> less_than()
+      "111" -> solve_packets(packet.sub_packets) |> equal_to()
+    end
+  end
+
+  def convert_literal(nums) do
+    {integer, _} =
+      nums
+      |> Enum.join()
+      |> Integer.parse(2)
+    integer
+  end
+
+  def greater_than([first, second | _]) do
+    if first > second do
+      1
+    else
+      0
+    end
+  end
+
+  def less_than([first, second | _]) do
+    if first < second do
+      1
+    else
+      0
+    end
+  end
+
+  def equal_to([first, second | _]) do
+    if first == second do
+      1
+    else
+      0
+    end
   end
 
   def convert_to_binary(body) do
@@ -32,8 +75,6 @@ defmodule AOCDay16 do
     if Enum.all?(String.codepoints(binary), fn x -> x == "0" end) do
       {packets, binary}
     else
-      IO.inspect(version, label: "meta version")
-      IO.inspect(type_id, label: "meta type_id")
 
       new_current =
         current_packet
@@ -57,14 +98,12 @@ defmodule AOCDay16 do
 
     case more? do
       "1" -> read_literal(rest, packets, new_current, num_of_packets)
-      "0" -> read_meta(rest, [new_current | packets], %{}, num_of_packets - 1)
+      "0" -> read_meta(rest, packets ++ [new_current], %{}, num_of_packets - 1)
     end
   end
 
   def read_operator(binary, packets, current_packet, num_of_packets) do
-    IO.inspect(binary, label: "operator binary")
     {length_modifier, rest} = String.split_at(binary, 1)
-    IO.inspect(length_modifier, label: "operator length_mod")
     new_current = Map.put(current_packet, :length_modifier, length_modifier)
 
     case length_modifier do
@@ -74,30 +113,34 @@ defmodule AOCDay16 do
   end
 
   def read_15_bits_len_num_bits(binary, packets, current_packet, num_of_packets) do
-    IO.inspect(binary, label: "read 15 bits len num")
     {bit_15_packet_size, rest} = String.split_at(binary, 15)
 
     {packet_size, _} = Integer.parse(bit_15_packet_size, 2)
 
+    {packets_string, rest2} = String.split_at(rest, packet_size)
+    {sub_packets, _} = read_meta(packets_string, [], %{}, 1000)
+
     new_current =
       current_packet
       |> Map.put(:packet_size, packet_size)
+      |> Map.put(:sub_packets, sub_packets)
 
-    {packets_string, rest2} = String.split_at(rest, packet_size)
-    {packets2, _} = read_meta(packets_string, [], %{}, 1000)
-    read_meta(rest2, [new_current | packets] ++ packets2, %{}, num_of_packets - 1)
+    read_meta(rest2, packets ++ [new_current], %{}, num_of_packets - 1)
   end
 
   def read_11_bits_num_packets(binary, packets, current_packet, current_num_of_packets) do
-    IO.inspect(binary, label: "read 11 bits num packet")
     {bit_11_packet_num, rest} = String.split_at(binary, 11)
 
     {num_of_packets, _} = Integer.parse(bit_11_packet_num, 2)
-    IO.inspect(num_of_packets, label: "read 11 num of packets")
 
-    {packet_list, rest2} = read_meta(rest, [], %{}, num_of_packets)
+    {sub_packets, rest2} = read_meta(rest, [], %{}, num_of_packets)
 
-    read_meta(rest2, [current_packet | packets] ++ packet_list, %{}, current_num_of_packets - 1)
+    new_current =
+      current_packet
+      |> Map.put(:num_of_packets, num_of_packets)
+      |> Map.put(:sub_packets, sub_packets)
+
+    read_meta(rest2, packets ++ [new_current], %{}, current_num_of_packets - 1)
   end
 
   def convert_to_binary_str(hexa) do
